@@ -13,19 +13,35 @@
 # limitations under the License.
 
 
-def paths_to_dot(paths, edge_legend=None):
+def paths_to_dot(paths, edge_legend=None, node_legend=None):
     """Given dependency paths, output in dot format for graphviz."""
     if edge_legend is None:
         edge_legend = {}
+    if node_legend is None:
+        node_legend = {}
     edges = []
+    nodes = set()
     for edge in paths:
-        start, end, rawtype = edge
         style = ''
-        if not start or not end:
-            continue
-        if rawtype in edge_legend:
-            style = edge_legend[rawtype]
-        edges.append('  "{beg}" -> "{end}"{style};  // {rawtype}\n'.format(
-            beg=start, end=end, style=style, rawtype=rawtype))
+        if edge.edge_type in edge_legend:
+            style = edge_legend[edge.edge_type]
+        edges.append('  "{beg}%{begtype}" -> "{end}%{endtype}"{style};  // {rawtype}\n'.format(
+            beg=edge.start.name,
+            begtype=edge.start.node_type,
+            end=edge.end.name,
+            endtype=edge.end.node_type,
+            style=style,
+            rawtype=edge.edge_type))
+        nodes.add(edge.start)
+        nodes.add(edge.end)
+    node_dot = []
+    for node in nodes:
+        style = ''
+        if node.node_type in node_legend:
+            style = node_legend[node.node_type]
+        node_dot.append('  "{name}%{ntype}"{style}[label="{name}"];  // {ntype}\n'.format(
+            name=node.name, style=style, ntype=node.node_type))
 
-    return 'digraph G {{\n{edges}}}'.format(edges=''.join(edges))
+    return 'digraph G {{\n{edges}\n{nodes}}}'.format(
+        edges=''.join(edges),
+        nodes=''.join(node_dot))
